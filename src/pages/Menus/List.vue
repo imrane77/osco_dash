@@ -183,7 +183,7 @@
               <div class="row no-gutters">
                 <div class="col-4">
                   <img
-                    :src="menuItem.image_url"
+                    :src="`https://oscoapi-hjtj1.sevalla.app/storage${menuItem.image_url}`"
                     :alt="getMenuItemName(menuItem)"
                     class="mobile-image"
                   />
@@ -367,7 +367,7 @@
         <div class="row">
           <div class="col-md-6">
             <img
-              :src="selectedMenuItem.image_url"
+              :src="`https://oscoapi-hjtj1.sevalla.app/storage${selectedMenuItem.image_url}`"
               :alt="getMenuItemName(selectedMenuItem)"
               class="img-fluid rounded"
             />
@@ -556,7 +556,7 @@
                 <label class="form-control-label">Image Preview</label>
                 <div class="image-preview">
                   <img
-                    :src="editForm.image_url"
+                    :src="`https://oscoapi-hjtj1.sevalla.app/storage${editForm.image_url}`"
                     :alt="editForm.name.en"
                     class="img-fluid rounded"
                     style="max-height: 200px; width: auto;"

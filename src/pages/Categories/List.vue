@@ -14,10 +14,11 @@
                 </p>
               </div>
               <div class="col-sm-6">
-                <div class="btn-group-toggle float-right" data-toggle="buttons">
+                <div class="btn-group-toggle d-flex justify-content-sm-end justify-content-center mt-3 mt-sm-0" data-toggle="buttons">
                   <router-link to="/categories/add" class="btn btn-sm btn-primary btn-simple">
                     <i class="tim-icons icon-simple-add" aria-hidden="true"></i>
-                    Add New Category
+                    <span class="d-none d-md-inline ml-1">Add New Category</span>
+                    <span class="d-md-none ml-1">Add</span>
                   </router-link>
                 </div>
               </div>
@@ -59,26 +60,103 @@
       </div>
     </div>
 
-    <!-- Categories Table -->
+    <!-- Categories Table/Cards -->
     <div class="row" v-if="!isLoading && filteredCategories.length > 0">
       <div class="col-12">
-        <table class="table table-responsive">
-          <thead>
-            <tr>
-              <th>
-                <i class="tim-icons icon-bullet-list-67 mr-1"></i>
-                Image
-              </th>
-              <th>Name</th>
-              <th>Display Order</th>
-              <th>Description</th>
-              <th>Created At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(category, index) in filteredSortedCategories"
+        <!-- Desktop Table View -->
+        <div class="d-none d-lg-block">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>
+                    <i class="tim-icons icon-bullet-list-67 mr-1"></i>
+                    Image
+                  </th>
+                  <th>Name</th>
+                  <th>Display Order</th>
+                  <th>Description</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(category, index) in paginatedCategories"
+                  :key="category.id"
+                  :data-id="category.id"
+                  :data-index="index"
+                  draggable="true"
+                  @dragstart="handleDragStart($event, category, index)"
+                  @dragover="handleDragOver"
+                  @drop="handleDrop($event, index)"
+                  @dragend="handleDragEnd"
+                  :class="{ 'dragging': draggedItem && draggedItem.id === category.id, 'drag-over': dragOverIndex === index }"
+                  class="draggable-row"
+                >
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="tim-icons icon-bullet-list-67 drag-handle mr-2 text-muted" title="Drag to reorder"></i>
+                      <img
+                        :src="`https://oscoapi-hjtj1.sevalla.app/storage${category.image_url}`"
+                        :alt="category.name.en"
+                        class="table-image"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{{ category.name.en }}</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-muted">{{ category.display_order }}</span>
+                  </td>
+                  <td>
+                    <span class="text-muted">{{ truncateText(category.description.en, 80) }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="text-muted">{{ formatDate(category.created_at) }}</span>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group" role="group">
+                      <base-button
+                        type="info"
+                        size="sm"
+                        @click="viewDetails(category)"
+                        aria-label="Show details"
+                        class="mr-1"
+                      >
+                        <i class="tim-icons icon-zoom-split" aria-hidden="true"></i>
+                      </base-button>
+                      <base-button
+                        type="warning"
+                        size="sm"
+                        @click="editCategory(category)"
+                        aria-label="Edit category"
+                        class="mr-1"
+                      >
+                        <i class="tim-icons icon-pencil" aria-hidden="true"></i>
+                      </base-button>
+                      <base-button
+                        type="danger"
+                        size="sm"
+                        @click="confirmDelete(category)"
+                        aria-label="Delete category"
+                      >
+                        <i class="tim-icons icon-trash-simple" aria-hidden="true"></i>
+                      </base-button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-lg-none">
+          <div class="row">
+            <div
+              v-for="(category, index) in paginatedCategories"
               :key="category.id"
               :data-id="category.id"
               :data-index="index"
@@ -88,61 +166,61 @@
               @drop="handleDrop($event, index)"
               @dragend="handleDragEnd"
               :class="{ 'dragging': draggedItem && draggedItem.id === category.id, 'drag-over': dragOverIndex === index }"
-              class="draggable-row"
+              class="col-12 col-md-6 mb-3 draggable-card"
             >
-              <td>
-                <div class="d-flex align-items-center">
-                  <i class="tim-icons icon-bullet-list-67 drag-handle mr-2 text-muted" title="Drag to reorder"></i>
-                  <img
-                    :src="`https://oscoapi-hjtj1.sevalla.app/storage${category.image_url}`"
-                    :alt="category.name.en"
-                    class="table-image"
-                  />
+              <card class="category-card h-100">
+                <div class="card-body p-3">
+                  <div class="d-flex align-items-start mb-3">
+                    <img
+                      :src="`https://oscoapi-hjtj1.sevalla.app/storage${category.image_url}`"
+                      :alt="category.name.en"
+                      class="category-card-image mr-3"
+                    />
+                    <div class="flex-grow-1">
+                      <h5 class="card-title mb-1">{{ category.name.en }}</h5>
+                      <small class="text-muted">Order: {{ category.display_order }}</small>
+                    </div>
+                    <i class="tim-icons icon-bullet-list-67 drag-handle text-muted" title="Drag to reorder"></i>
+                  </div>
+                  
+                  <p class="card-text text-muted mb-2">{{ truncateText(category.description.en, 100) }}</p>
+                  
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatDate(category.created_at) }}</small>
+                    <div class="btn-group" role="group">
+                      <base-button
+                        type="info"
+                        size="sm"
+                        @click="viewDetails(category)"
+                        aria-label="Show details"
+                        class="mr-1"
+                      >
+                        <i class="tim-icons icon-zoom-split" aria-hidden="true"></i>
+                      </base-button>
+                      <base-button
+                        type="warning"
+                        size="sm"
+                        @click="editCategory(category)"
+                        aria-label="Edit category"
+                        class="mr-1"
+                      >
+                        <i class="tim-icons icon-pencil" aria-hidden="true"></i>
+                      </base-button>
+                      <base-button
+                        type="danger"
+                        size="sm"
+                        @click="confirmDelete(category)"
+                        aria-label="Delete category"
+                      >
+                        <i class="tim-icons icon-trash-simple" aria-hidden="true"></i>
+                      </base-button>
+                    </div>
+                  </div>
                 </div>
-              </td>
-              <td>
-                <strong>{{ category.name.en }}</strong>
-              </td>
-              <td class="text-center">
-                <span class="text-muted">{{ category.display_order }}</span>
-              </td>
-              <td>
-                <span class="text-muted">{{ truncateText(category.description.en, 80) }}</span>
-              </td>
-              <td class="text-center">
-                <span class="text-muted">{{ formatDate(category.created_at) }}</span>
-              </td>
-              <td class="text-center">
-                <base-button
-                  type="info"
-                  size="sm"
-                  @click="viewDetails(category)"
-                  aria-label="Show details"
-                  class="mr-1"
-                >
-                  <i class="tim-icons icon-zoom-split" aria-hidden="true"></i>
-                </base-button>
-                <base-button
-                  type="warning"
-                  size="sm"
-                  @click="editCategory(category)"
-                  aria-label="Edit category"
-                  class="mr-1"
-                >
-                  <i class="tim-icons icon-pencil" aria-hidden="true"></i>
-                </base-button>
-                <base-button
-                  type="danger"
-                  size="sm"
-                  @click="confirmDelete(category)"
-                  aria-label="Delete category"
-                >
-                  <i class="tim-icons icon-trash-simple" aria-hidden="true"></i>
-                </base-button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </card>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -182,14 +260,14 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <small class="text-muted">
-                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, categories.length) }} of {{ categories.length }} categories
+                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredCategories.length) }} of {{ filteredCategories.length }} categories
               </small>
             </div>
-            <nav aria-label="Category pagination">
+            <nav>
               <ul class="pagination pagination-sm mb-0">
                 <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <a class="page-link" @click.prevent="changePage(currentPage - 1)" href="#" aria-label="Previous page">
-                    <i class="tim-icons icon-double-left" aria-hidden="true"></i>
+                  <a class="page-link" @click="changePage(currentPage - 1)" href="#">
+                    <i class="tim-icons icon-double-left"></i>
                   </a>
                 </li>
                 <li
@@ -198,11 +276,11 @@
                   :key="page"
                   :class="{ active: page === currentPage }"
                 >
-                  <a class="page-link" @click.prevent="changePage(page)" href="#">{{ page }}</a>
+                  <a class="page-link" @click="changePage(page)" href="#">{{ page }}</a>
                 </li>
                 <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                  <a class="page-link" @click.prevent="changePage(currentPage + 1)" href="#" aria-label="Next page">
-                    <i class="tim-icons icon-double-right" aria-hidden="true"></i>
+                  <a class="page-link" @click="changePage(currentPage + 1)" href="#">
+                    <i class="tim-icons icon-double-right"></i>
                   </a>
                 </li>
               </ul>
@@ -225,17 +303,21 @@
         <p class="text-muted">This action cannot be undone.</p>
       </div>
       <template slot="footer">
-        <base-button type="secondary" @click="showDeleteModal = false" aria-label="Cancel delete">Cancel</base-button>
-        <base-button
-          type="danger"
-          @click="deleteCategoryHandler"
-          :disabled="isDeleting"
-          aria-label="Confirm delete category"
-        >
-          <i class="fa fa-spinner fa-spin" v-if="isDeleting" aria-hidden="true"></i>
-          <i class="tim-icons icon-simple-remove" v-else aria-hidden="true"></i>
-          {{ isDeleting ? 'Deleting...' : 'Delete' }}
-        </base-button>
+        <div class="d-flex flex-column flex-sm-row justify-content-end w-100">
+          <base-button type="secondary" @click="showDeleteModal = false" aria-label="Cancel delete" class="mb-2 mb-sm-0 mr-sm-2">
+            Cancel
+          </base-button>
+          <base-button
+            type="danger"
+            @click="deleteCategoryHandler"
+            :disabled="isDeleting"
+            aria-label="Confirm delete category"
+          >
+            <i class="fa fa-spinner fa-spin" v-if="isDeleting" aria-hidden="true"></i>
+            <i class="tim-icons icon-simple-remove" v-else aria-hidden="true"></i>
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </base-button>
+        </div>
       </template>
     </modal>
 
@@ -249,19 +331,20 @@
       </template>
       <div v-if="selectedCategory" class="category-details">
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-6 col-12 mb-3 mb-md-0">
             <img
-              :src="selectedCategory.image_url || '/img/placeholder-category.jpg'"
+              :src="`https://oscoapi-hjtj1.sevalla.app/storage${selectedCategory.image_url || '/img/placeholder-category.jpg'}`"
               :alt="selectedCategory.name?.en"
-              class="img-fluid rounded"
+              class="img-fluid rounded w-100"
+              style="max-height: 300px; object-fit: cover;"
             />
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6 col-12">
             <h3>{{ selectedCategory.name?.en }}</h3>
             <p class="text-muted">{{ selectedCategory.description?.en || 'No description available' }}</p>
             <hr>
             <div class="category-info">
-              <div class="info-item">
+              <div class="info-item mb-2">
                 <strong>Display Order:</strong>
                 <span class="ml-2">{{ selectedCategory.display_order || 0 }}</span>
               </div>
@@ -274,16 +357,21 @@
         </div>
       </div>
       <template slot="footer">
-        <base-button type="secondary" @click="showDetailsModal = false" aria-label="Close details modal">Close</base-button>
-        <base-button
-          type="warning"
-          @click="editCategory(selectedCategory)"
-          v-if="selectedCategory"
-          aria-label="Edit category"
-        >
-          <i class="tim-icons icon-pencil" aria-hidden="true"></i>
-          Edit Category
-        </base-button>
+        <div class="d-flex flex-column flex-sm-row justify-content-end w-100">
+          <base-button type="secondary" @click="showDetailsModal = false" aria-label="Close details modal" class="mb-2 mb-sm-0 mr-sm-2">
+            Close
+          </base-button>
+          <base-button
+            type="warning"
+            @click="editCategory(selectedCategory)"
+            v-if="selectedCategory"
+            aria-label="Edit category"
+          >
+            <i class="tim-icons icon-pencil" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline ml-1">Edit Category</span>
+            <span class="d-sm-none ml-1">Edit</span>
+          </base-button>
+        </div>
       </template>
     </modal>
 
@@ -316,12 +404,16 @@
         </form>
       </div>
       <template slot="footer">
-        <base-button type="secondary" @click="closeEditModal">Cancel</base-button>
-        <base-button type="warning" @click="saveCategoryUpdate" :disabled="isSaving">
-          <i class="fa fa-spinner fa-spin" v-if="isSaving"></i>
-          <i class="tim-icons icon-pencil" v-else></i>
-          {{ isSaving ? 'Saving...' : 'Update' }}
-        </base-button>
+        <div class="d-flex flex-column flex-sm-row justify-content-end w-100">
+          <base-button type="secondary" @click="closeEditModal" class="mb-2 mb-sm-0 mr-sm-2">
+            Cancel
+          </base-button>
+          <base-button type="warning" @click="saveCategoryUpdate" :disabled="isSaving">
+            <i class="fa fa-spinner fa-spin" v-if="isSaving"></i>
+            <i class="tim-icons icon-pencil" v-else></i>
+            {{ isSaving ? 'Saving...' : 'Update' }}
+          </base-button>
+        </div>
       </template>
     </modal>
   </div>
@@ -333,6 +425,7 @@ import { BaseInput, BaseButton, Card, Modal } from '@/components';
 
 export default {
   components: {
+    BaseInput,
     BaseButton,
     Card,
     Modal,
@@ -357,6 +450,7 @@ export default {
       isDeleting: false,
       isSaving: false,
       searchTerm: '',
+      categoryToDelete: null,
     };
   },
   computed: {
@@ -377,12 +471,21 @@ export default {
       return success.value;
     },
     totalPages() {
-      return Math.ceil(this.categories.length / this.itemsPerPage);
+      return Math.ceil(this.filteredCategories.length / this.itemsPerPage);
     },
     paginatedCategories() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
-      return this.categories.slice(start, end);
+      const paginated = this.filteredSortedCategories.slice(start, end);
+      console.log('Pagination debug:', {
+        currentPage: this.currentPage,
+        itemsPerPage: this.itemsPerPage,
+        totalItems: this.filteredSortedCategories.length,
+        start,
+        end,
+        paginatedCount: paginated.length
+      });
+      return paginated;
     },
     visiblePages() {
       const pages = [];
@@ -473,15 +576,48 @@ export default {
     async saveCategoryUpdate() {
       if (this.selectedCategory) {
         this.isSaving = true;
-        await updateCategory(this.selectedCategory.id, {
-          name: { en: this.editForm.name },
-          description: { en: this.editForm.description },
-          display_order: this.selectedCategory.display_order,
-          image_url: this.selectedCategory.image_url
-        });
-        this.isSaving = false;
-        this.showEditModal = false;
-        this.refreshCategories();
+        try {
+          // Prepare update data with proper validation
+          const updateData = {
+            name: { en: this.editForm.name },
+            description: { en: this.editForm.description },
+            display_order: this.selectedCategory.display_order
+          };
+
+          // Only include image_url if it's a valid URL or remove it entirely
+          if (this.selectedCategory.image_url && this.selectedCategory.image_url.startsWith('http')) {
+            updateData.image_url = this.selectedCategory.image_url;
+          }
+
+          console.log('Sending update data:', updateData);
+          
+          await updateCategory(this.selectedCategory.id, updateData);
+          
+          this.showEditModal = false;
+          this.refreshCategories();
+          
+          // Show success notification
+          if (this.$notify) {
+            this.$notify({
+              type: 'success',
+              icon: 'tim-icons icon-check-2',
+              message: 'Category updated successfully!'
+            });
+          }
+        } catch (error) {
+          console.error('Error updating category:', error);
+          
+          // Show error notification
+          if (this.$notify) {
+            this.$notify({
+              type: 'danger',
+              icon: 'tim-icons icon-simple-remove',
+              message: error.message || 'Failed to update category. Please try again.'
+            });
+          }
+        } finally {
+          this.isSaving = false;
+        }
       }
     },
     handleDragStart(event, category, index) {
@@ -498,10 +634,10 @@ export default {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
 
-      // Get the index of the row being dragged over
-      const row = event.target.closest('tr');
-      if (row) {
-        const index = parseInt(row.dataset.index);
+      // Get the index of the element being dragged over (works for both table rows and cards)
+      const element = event.target.closest('tr') || event.target.closest('.draggable-card');
+      if (element && element.dataset.index !== undefined) {
+        const index = parseInt(element.dataset.index);
         this.dragOverIndex = index;
       }
     },
@@ -509,12 +645,17 @@ export default {
     handleDrop(event, dropIndex) {
       event.preventDefault();
 
-      if (this.draggedIndex === null || this.draggedIndex === dropIndex) {
+      if (this.draggedIndex === null || this.draggedIndex === dropIndex || this.isReordering) {
         this.resetDragState();
         return;
       }
 
-      this.reorderItems(this.draggedIndex, dropIndex);
+      // Calculate actual indices in the full filtered list
+      const actualFromIndex = (this.currentPage - 1) * this.itemsPerPage + this.draggedIndex;
+      const actualToIndex = (this.currentPage - 1) * this.itemsPerPage + dropIndex;
+
+      console.log('Drop event - from:', actualFromIndex, 'to:', actualToIndex);
+      this.reorderItems(actualFromIndex, actualToIndex);
       this.resetDragState();
     },
 
@@ -530,45 +671,123 @@ export default {
       this.dragOverIndex = null;
     },
 
-    async reorderItems(fromIndex, toIndex) {
-      if (this.isReordering) return;
+    // Replace your existing reorderItems method in the Vue component with this simplified version
 
-      this.isReordering = true;
+async reorderItems(fromIndex, toIndex) {
+  if (this.isReordering || fromIndex === toIndex) return;
 
-      try {
-        // Create a copy of the sorted categories array
-        const items = [...this.sortedCategories];
+  this.isReordering = true;
+  console.log(`Reordering from index ${fromIndex} to index ${toIndex}`);
 
-        // Move the item from fromIndex to toIndex
-        const [movedItem] = items.splice(fromIndex, 1);
-        items.splice(toIndex, 0, movedItem);
+  try {
+    // Work with the complete sorted categories list
+    const items = [...this.sortedCategories];
 
-        // Extract the IDs in the new order
-        const orderedIds = items.map(item => item.id);
-
-        console.log('Reordering from index', fromIndex, 'to index', toIndex);
-        console.log('New order:', orderedIds);
-
-        // Call the API to update the order
-        await reorderCategories(orderedIds);
-
-        this.$notify({
-          type: 'success',
-          icon: 'tim-icons icon-check-2',
-          message: 'Categories reordered successfully!'
-        });
-
-      } catch (error) {
-        console.error('Error reordering categories:', error);
-        this.$notify({
-          type: 'danger',
-          icon: 'tim-icons icon-simple-remove',
-          message: 'Failed to reorder categories. Please try again.'
-        });
-      } finally {
-        this.isReordering = false;
-      }
+    // Validate indices
+    if (fromIndex < 0 || fromIndex >= items.length || toIndex < 0 || toIndex >= items.length) {
+      throw new Error(`Invalid drag indices: from ${fromIndex}, to ${toIndex}, total ${items.length}`);
     }
+
+    // Create a new array with the item moved to the new position
+    const reorderedItems = [...items];
+    const [movedItem] = reorderedItems.splice(fromIndex, 1);
+    reorderedItems.splice(toIndex, 0, movedItem);
+
+    console.log('Items being reordered:', {
+      movedItem: { id: movedItem.id, name: movedItem.name?.en, oldOrder: movedItem.display_order },
+      fromIndex,
+      toIndex
+    });
+
+    // Update display_order for all affected items
+    const updatedItems = reorderedItems.map((item, index) => ({
+      ...item,
+      display_order: index + 1
+    }));
+
+    // Get the IDs in the new order
+    const orderedIds = updatedItems.map(item => item.id);
+    console.log('New order IDs:', orderedIds);
+
+    // Update categories using individual API calls
+    await this.updateCategoriesIndividually(updatedItems);
+
+    // Show success notification
+    if (this.$notify) {
+      this.$notify({
+        type: 'success',
+        icon: 'tim-icons icon-check-2',
+        message: 'Categories reordered successfully!'
+      });
+    }
+
+    // Refresh categories to ensure consistency
+    await this.refreshCategories();
+
+  } catch (error) {
+    console.error('Error reordering categories:', error);
+    
+    // Show error notification
+    if (this.$notify) {
+      this.$notify({
+        type: 'danger',
+        icon: 'tim-icons icon-simple-remove',
+        message: error.message || 'Failed to reorder categories. Please try again.'
+      });
+    }
+    
+    // Refresh categories to revert any local changes
+    await this.refreshCategories();
+  } finally {
+    this.isReordering = false;
+  }
+},
+
+// Optimized method to handle concurrent category updates
+async updateCategoriesIndividually(updatedItems) {
+  console.log('Updating categories concurrently...');
+  
+  const { updateCategory } = await import('@/stores/category');
+  
+  // Create all update promises concurrently for better performance
+  const updatePromises = updatedItems.map(async (item) => {
+    try {
+      // Prepare clean update data
+      const updateData = {
+        name: item.name || { en: 'Unnamed Category' },
+        description: item.description || { en: '' },
+        display_order: item.display_order
+      };
+
+      // Handle image_url - skip it if it's a relative path to avoid validation errors
+      if (item.image_url && item.image_url.startsWith('http')) {
+        updateData.image_url = item.image_url;
+      }
+
+      console.log(`Updating category ${item.id} with order ${item.display_order}`);
+      
+      await updateCategory(item.id, updateData);
+      return { success: true, id: item.id };
+      
+    } catch (error) {
+      console.error(`Failed to update category ${item.id}:`, error.message);
+      return { success: false, id: item.id, error: error.message };
+    }
+  });
+  
+  // Wait for all updates to complete
+  const results = await Promise.all(updatePromises);
+  const successCount = results.filter(r => r.success).length;
+  const errorCount = results.filter(r => !r.success).length;
+  
+  console.log(`Concurrent updates completed: ${successCount} successful, ${errorCount} failed`);
+  
+  if (successCount === 0) {
+    throw new Error('All category updates failed');
+  } else if (errorCount > 0) {
+    console.warn(`Some updates failed, but ${successCount} succeeded`);
+  }
+},
   },
   mounted() {
     getCategories();
@@ -583,6 +802,79 @@ export default {
   object-fit: cover;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.category-card-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.category-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e3e6f0;
+}
+
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-card {
+  cursor: move;
+  transition: all 0.2s ease;
+}
+
+.draggable-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.draggable-card.drag-over {
+  border: 2px dashed #1d8cf8;
+  background-color: rgba(29, 140, 248, 0.05);
+}
+
+@media (max-width: 768px) {
+  .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .btn-group .btn {
+    flex: 1;
+    min-width: 40px;
+  }
+  
+  .category-card-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+  }
+  
+  .pagination .page-item {
+    margin: 0.1rem;
+  }
+  
+  .draggable-card {
+    touch-action: none;
+  }
+  
+  .drag-handle {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+  }
 }
 
 /* Drag and Drop Styles */
@@ -623,15 +915,9 @@ export default {
   vertical-align: middle;
 }
 
-.pagination {
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.pagination .page-item .page-link {
+.pagination .page-link {
   color: #1d8cf8;
-  border-color: #1d8cf8;
-  background-color: transparent;
+  border-color: #dee2e6;
 }
 
 .pagination .page-item.active .page-link {
