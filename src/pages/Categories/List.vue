@@ -98,9 +98,13 @@
                     <div class="d-flex align-items-center">
                       <i class="tim-icons icon-bullet-list-67 drag-handle mr-2 text-muted" title="Drag to reorder"></i>
                       <img
-                        :src="`https://oscoapi-hjtj1.sevalla.app/storage${category.image_url}`"
+                        :src="getImageUrl(category.image_url)"
                         :alt="category.name.en"
-                        class="table-image"
+                        class="table-image clickable-image"
+                        @error="handleImageError($event, category)"
+                        @load="handleImageLoad($event, category)"
+                        @click="previewImage(category)"
+                        title="Click to preview"
                       />
                     </div>
                   </td>
@@ -172,9 +176,13 @@
                 <div class="card-body p-3">
                   <div class="d-flex align-items-start mb-3">
                     <img
-                      :src="`https://oscoapi-hjtj1.sevalla.app/storage${category.image_url}`"
+                      :src="getImageUrl(category.image_url)"
                       :alt="category.name.en"
-                      class="category-card-image mr-3"
+                      class="category-card-image mr-3 clickable-image"
+                      @error="handleImageError($event, category)"
+                      @load="handleImageLoad($event, category)"
+                      @click="previewImage(category)"
+                      title="Click to preview"
                     />
                     <div class="flex-grow-1">
                       <h5 class="card-title mb-1">{{ category.name.en }}</h5>
@@ -333,7 +341,7 @@
         <div class="row">
           <div class="col-md-6 col-12 mb-3 mb-md-0">
             <img
-              :src="`https://oscoapi-hjtj1.sevalla.app/storage${selectedCategory.image_url || '/img/placeholder-category.jpg'}`"
+              :src="getImageUrl(selectedCategory.image_url || '/img/placeholder-category.jpg')"
               :alt="selectedCategory.name?.en"
               class="img-fluid rounded w-100"
               style="max-height: 300px; object-fit: cover;"
@@ -398,8 +406,61 @@
             <input v-model.number="selectedCategory.display_order" type="number" class="form-control" min="1" />
           </div>
           <div class="form-group">
-            <label>Image URL</label>
-            <input v-model="selectedCategory.image_url" class="form-control" />
+            <label>Category Image</label>
+            <div class="image-upload-section">
+              <div class="current-image mb-3" v-if="selectedCategory.image_url">
+                <img
+                  :src="getImageUrl(selectedCategory.image_url)"
+                  :alt="selectedCategory.name?.en"
+                  class="preview-image clickable-image"
+                  @click="previewImage(selectedCategory)"
+                  title="Click to preview"
+                />
+                <div class="image-actions mt-2">
+                  <base-button
+                    type="danger"
+                    size="sm"
+                    @click="removeImage"
+                    class="mr-2"
+                  >
+                    <i class="tim-icons icon-trash-simple"></i>
+                    Remove
+                  </base-button>
+                </div>
+              </div>
+              <div class="upload-options">
+                <div class="form-group">
+                  <label>Image URL</label>
+                  <div class="input-group">
+                    <input
+                      v-model="selectedCategory.image_url"
+                      class="form-control"
+                      placeholder="Enter image URL or upload file"
+                    />
+                    <div class="input-group-append">
+                      <base-button
+                        type="info"
+                        size="sm"
+                        @click="triggerFileUpload"
+                      >
+                        <i class="tim-icons icon-cloud-upload-94"></i>
+                        Upload
+                      </base-button>
+                    </div>
+                  </div>
+                </div>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  @change="handleFileUpload"
+                  style="display: none;"
+                />
+                <small class="text-muted">
+                  Supported formats: JPG, PNG, GIF, WebP (Max: 5MB)
+                </small>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -412,6 +473,43 @@
             <i class="fa fa-spinner fa-spin" v-if="isSaving"></i>
             <i class="tim-icons icon-pencil" v-else></i>
             {{ isSaving ? 'Saving...' : 'Update' }}
+          </base-button>
+        </div>
+      </template>
+    </modal>
+
+    <!-- Image Preview Modal -->
+    <modal :show="showImageModal" @close="showImageModal = false" size="lg">
+      <template slot="header">
+        <h4 class="modal-title">
+          <i class="tim-icons icon-image-02 text-info" aria-hidden="true"></i>
+          Image Preview
+        </h4>
+      </template>
+      <div v-if="previewImageData" class="text-center">
+        <img
+          :src="getImageUrl(previewImageData.image_url)"
+          :alt="previewImageData.name?.en"
+          class="img-fluid rounded"
+          style="max-height: 500px; max-width: 100%; object-fit: contain;"
+        />
+        <div class="mt-3">
+          <h5>{{ previewImageData.name?.en }}</h5>
+          <p class="text-muted">{{ previewImageData.description?.en || 'No description available' }}</p>
+        </div>
+      </div>
+      <template slot="footer">
+        <div class="d-flex flex-column flex-sm-row justify-content-end w-100">
+          <base-button type="secondary" @click="showImageModal = false" class="mb-2 mb-sm-0 mr-sm-2">
+            Close
+          </base-button>
+          <base-button
+            type="warning"
+            @click="editImageCategory"
+            v-if="previewImageData"
+          >
+            <i class="tim-icons icon-pencil" aria-hidden="true"></i>
+            Edit Category
           </base-button>
         </div>
       </template>
@@ -451,6 +549,9 @@ export default {
       isSaving: false,
       searchTerm: '',
       categoryToDelete: null,
+      showImageModal: false,
+      previewImageData: null,
+      isUploading: false,
     };
   },
   computed: {
@@ -536,6 +637,153 @@ export default {
         month: 'short',
         day: 'numeric',
       });
+    },
+    getImageUrl(imagePath) {
+      console.log('Processing image path:', imagePath);
+      
+      if (!imagePath) {
+        console.log('No image path, using placeholder');
+        return 'https://via.placeholder.com/300x200/e3e6f0/6c757d?text=No+Image';
+      }
+      
+      // If it's already a full URL, return as is
+      if (imagePath.startsWith('http')) {
+        console.log('Full URL detected:', imagePath);
+        return imagePath;
+      }
+      
+      // If it's a data URL (base64), return as is
+      if (imagePath.startsWith('data:')) {
+        console.log('Data URL detected');
+        return imagePath;
+      }
+      
+      // If it's a relative path, prepend the base URL
+      // Ensure there's a leading slash on the imagePath
+      const cleanPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+      const fullUrl = `https://oscoapi-hjtj1.sevalla.app/storage${cleanPath}`;
+      console.log('Converted relative path to:', fullUrl);
+      return fullUrl;
+    },
+    handleImageError(event, category) {
+      console.error('Image failed to load for category:', category.name?.en, 'URL:', event.target.src);
+      // Set a placeholder image on error
+      event.target.src = 'https://via.placeholder.com/300x200/e3e6f0/6c757d?text=No+Image';
+    },
+    handleImageLoad(event, category) {
+      console.log('Image loaded successfully for category:', category.name?.en, 'URL:', event.target.src);
+    },
+    previewImage(category) {
+      this.previewImageData = category;
+      this.showImageModal = true;
+    },
+    editImageCategory() {
+      if (this.previewImageData) {
+        this.showImageModal = false;
+        this.editCategory(this.previewImageData);
+      }
+    },
+    triggerFileUpload() {
+      this.$refs.fileInput.click();
+    },
+    async handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        if (this.$notify) {
+          this.$notify({
+            type: 'danger',
+            icon: 'tim-icons icon-simple-remove',
+            message: 'File size must be less than 5MB'
+          });
+        }
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        if (this.$notify) {
+          this.$notify({
+            type: 'danger',
+            icon: 'tim-icons icon-simple-remove',
+            message: 'Please select a valid image file (JPG, PNG, GIF, WebP)'
+          });
+        }
+        return;
+      }
+
+      this.isUploading = true;
+      
+      try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('type', 'category');
+
+        // Upload to your API endpoint
+        const response = await fetch('https://oscoapi-hjtj1.sevalla.app/api/upload-image', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+        
+        // Update the image URL
+        if (result.url) {
+          this.selectedCategory.image_url = result.url;
+          
+          if (this.$notify) {
+            this.$notify({
+              type: 'success',
+              icon: 'tim-icons icon-check-2',
+              message: 'Image uploaded successfully!'
+            });
+          }
+        }
+        
+      } catch (error) {
+        console.error('Upload error:', error);
+        
+        // Fallback: Create a data URL for preview (temporary)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.selectedCategory.image_url = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        if (this.$notify) {
+          this.$notify({
+            type: 'warning',
+            icon: 'tim-icons icon-alert-circle-exc',
+            message: 'Upload service unavailable. Image set as preview only.'
+          });
+        }
+      } finally {
+        this.isUploading = false;
+        // Clear the file input
+        event.target.value = '';
+      }
+    },
+    removeImage() {
+      this.selectedCategory.image_url = '';
+      
+      if (this.$notify) {
+        this.$notify({
+          type: 'info',
+          icon: 'tim-icons icon-check-2',
+          message: 'Image removed'
+        });
+      }
     },
     viewDetails(category) {
       this.selectedCategory = category;
@@ -821,6 +1069,46 @@ async updateCategoriesIndividually(updatedItems) {
 .category-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.clickable-image {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-image:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.preview-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #e3e6f0;
+}
+
+.image-upload-section {
+  border: 1px solid #e3e6f0;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
+
+.image-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.upload-options {
+  margin-top: 1rem;
+}
+
+.input-group-append .btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .draggable-card {

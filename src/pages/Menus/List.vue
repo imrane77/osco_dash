@@ -112,9 +112,11 @@
                 <tr v-for="menuItem in paginatedMenuItems" :key="menuItem.id">
                   <td>
                     <img
-                      :src="`https://oscoapi-hjtj1.sevalla.app/storage${menuItem.image_url}`"
+                      :src="getImageUrl(menuItem.image_url)"
                       :alt="getMenuItemName(menuItem)"
                       class="table-image"
+                      @error="handleImageError($event, menuItem)"
+                      @load="handleImageLoad($event, menuItem)"
                     />
                   </td>
                   <td>
@@ -183,9 +185,11 @@
               <div class="row no-gutters">
                 <div class="col-4">
                   <img
-                    :src="`https://oscoapi-hjtj1.sevalla.app/storage${menuItem.image_url}`"
+                    :src="getImageUrl(menuItem.image_url)"
                     :alt="getMenuItemName(menuItem)"
                     class="mobile-image"
+                    @error="handleImageError($event, menuItem)"
+                    @load="handleImageLoad($event, menuItem)"
                   />
                 </div>
                 <div class="col-8">
@@ -367,9 +371,11 @@
         <div class="row">
           <div class="col-md-6">
             <img
-              :src="`https://oscoapi-hjtj1.sevalla.app/storage${selectedMenuItem.image_url}`"
+              :src="getImageUrl(selectedMenuItem.image_url)"
               :alt="getMenuItemName(selectedMenuItem)"
               class="img-fluid rounded"
+              @error="handleImageError($event, selectedMenuItem)"
+              @load="handleImageLoad($event, selectedMenuItem)"
             />
           </div>
           <div class="col-md-6">
@@ -552,16 +558,23 @@
               </div>
 
               <!-- Image Preview -->
-              <div class="form-group" v-if="editForm.image_url">
+              <div class="form-group">
                 <label class="form-control-label">Image Preview</label>
-                <div class="image-preview">
+                <div v-if="editForm.image_url && editForm.image_url.trim()" class="image-preview">
                   <img
-                    :src="`https://oscoapi-hjtj1.sevalla.app/storage${editForm.image_url}`"
+                    :src="getImageUrl(editForm.image_url)"
                     :alt="editForm.name.en"
                     class="img-fluid rounded"
-                    style="max-height: 200px; width: auto;"
+                    style="max-height: 200px; width: auto; border: 1px solid #ddd;"
+                    @error="handleImageError($event, null)"
+                    @load="handleImageLoad($event, null)"
                   />
                 </div>
+                <div v-else class="text-muted">
+                  No image available
+                </div>
+                <small class="text-muted">Debug - Image URL: {{ editForm.image_url }}</small>
+                <small class="text-muted d-block">Debug - URL length: {{ editForm.image_url ? editForm.image_url.length : 0 }}</small>
               </div>
 
               <!-- Image Upload -->
@@ -811,6 +824,8 @@ export default {
     },
 
     populateEditForm(menuItem) {
+      console.log('Populating edit form with menu item:', menuItem);
+      
       // Handle multilingual name
       if (typeof menuItem.name === 'object') {
         this.editForm.name = {
@@ -845,6 +860,9 @@ export default {
       this.editForm.menu_category_id = menuItem.menu_category_id || '';
       this.editForm.is_available = menuItem.is_available !== false;
       this.editForm.image_url = menuItem.image_url || '';
+      
+      console.log('Edit form populated:', this.editForm);
+      console.log('Image URL set to:', this.editForm.image_url);
     },
 
 async updateMenuItem() {
@@ -986,6 +1004,44 @@ async updateMenuItem() {
         this.editForm.image_file = file;
         this.editForm.image_url = URL.createObjectURL(file); // For preview
       }
+    },
+
+    getImageUrl(imagePath) {
+      console.log('Processing menu image path:', imagePath);
+      
+      if (!imagePath) {
+        console.log('No image path, using placeholder');
+        return '/img/placeholder-menu.jpg';
+      }
+      
+      // If it's a blob URL (from file upload), return as is
+      if (imagePath.startsWith('blob:')) {
+        console.log('Blob URL detected:', imagePath);
+        return imagePath;
+      }
+      
+      // If it's already a full URL, return as is
+      if (imagePath.startsWith('http')) {
+        console.log('Full URL detected:', imagePath);
+        return imagePath;
+      }
+      
+      // If it's a relative path, prepend the base URL
+      // Ensure there's a leading slash on the imagePath
+      const cleanPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+      const fullUrl = `https://oscoapi-hjtj1.sevalla.app/storage${cleanPath}`;
+      console.log('Converted relative path to:', fullUrl);
+      return fullUrl;
+    },
+
+    handleImageError(event, menuItem) {
+      console.error('Menu image failed to load for item:', menuItem?.name?.en || 'Unknown', 'URL:', event.target.src);
+      // Set a placeholder image on error
+      event.target.src = '/img/placeholder-menu.jpg';
+    },
+
+    handleImageLoad(event, menuItem) {
+      console.log('Menu image loaded successfully for item:', menuItem?.name?.en || 'Unknown', 'URL:', event.target.src);
     }
   },
 

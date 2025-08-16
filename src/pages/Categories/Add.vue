@@ -268,29 +268,41 @@ export default {
     },
 
     processImageFile(file) {
-      if (!file) return;
+      console.log('Processing image file:', file);
+      if (!file) {
+        console.log('No file provided');
+        return;
+      }
 
       // Clear previous errors
       delete this.errors.image;
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
+        console.log('Invalid file type:', file.type);
         this.errors.image = 'Please upload a valid image file';
         return;
       }
 
       // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
+        console.log('File too large:', file.size);
         this.errors.image = 'Image size must be less than 5MB';
         return;
       }
 
+      console.log('File validation passed, setting image and creating preview');
       this.category.image = file;
 
       // Create image preview
       const reader = new FileReader();
       reader.onload = (e) => {
+        console.log('FileReader loaded, setting preview');
         this.category.imagePreview = e.target.result;
+        console.log('Preview set:', this.category.imagePreview ? 'Success' : 'Failed');
+      };
+      reader.onerror = (e) => {
+        console.error('FileReader error:', e);
       };
       reader.readAsDataURL(file);
     },
@@ -350,7 +362,8 @@ async submitCategory() {
     // formData.append('name', JSON.stringify(processedName));
     // formData.append('description', JSON.stringify(processedDescription));
 
-    formData.append('image', this.category.image);
+    // Handle image upload - the backend will store it and return the path
+    formData.append('image_url', this.category.image);
 
     console.log('FormData contents:');
     for (let [key, value] of formData.entries()) {

@@ -335,29 +335,41 @@ export default {
     },
 
     processImageFile(file) {
-      if (!file) return;
+      console.log('Processing menu image file:', file);
+      if (!file) {
+        console.log('No file provided');
+        return;
+      }
 
       // Clear previous errors
       delete this.errors.image;
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
+        console.log('Invalid file type:', file.type);
         this.errors.image = 'Please upload a valid image file';
         return;
       }
 
       // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
+        console.log('File too large:', file.size);
         this.errors.image = 'Image size must be less than 5MB';
         return;
       }
 
+      console.log('Menu file validation passed, setting image and creating preview');
       this.menuItem.image = file;
 
       // Create image preview
       const reader = new FileReader();
       reader.onload = (e) => {
+        console.log('Menu FileReader loaded, setting preview');
         this.menuItem.imagePreview = e.target.result;
+        console.log('Menu preview set:', this.menuItem.imagePreview ? 'Success' : 'Failed');
+      };
+      reader.onerror = (e) => {
+        console.error('Menu FileReader error:', e);
       };
       reader.readAsDataURL(file);
     },
