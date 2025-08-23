@@ -7,9 +7,9 @@
             <div class="row">
               <div class="col-sm-6" :class="isRTL ? 'text-right' : 'text-left'">
                 <h5 class="card-category">
-                  {{ $t("dashboard.totalShipments") }}
+                  Menu Items by Category
                 </h5>
-                <h2 class="card-title">{{ $t("dashboard.performance") }}</h2>
+                <h2 class="card-title">Restaurant Statistics</h2>
               </div>
               <div class="col-sm-6">
                 <div
@@ -56,9 +56,9 @@
       <div class="col-lg-4" :class="{ 'text-right': isRTL }">
         <card type="chart">
           <template slot="header">
-            <h5 class="card-category">{{ $t("dashboard.totalShipments") }}</h5>
+            <h5 class="card-category">Total Categories</h5>
             <h3 class="card-title">
-              <i class="tim-icons icon-bell-55 text-primary"></i> 763,215
+              <i class="tim-icons icon-puzzle-10 text-primary"></i> {{ statistics.totalCategories }}
             </h3>
           </template>
           <div class="chart-area">
@@ -77,9 +77,9 @@
       <div class="col-lg-4" :class="{ 'text-right': isRTL }">
         <card type="chart">
           <template slot="header">
-            <h5 class="card-category">{{ $t("dashboard.dailySales") }}</h5>
+            <h5 class="card-category">Total Menu Items</h5>
             <h3 class="card-title">
-              <i class="tim-icons icon-delivery-fast text-info"></i> 3,500€
+              <i class="tim-icons icon-notes text-info"></i> {{ statistics.totalMenuItems }}
             </h3>
           </template>
           <div class="chart-area">
@@ -97,9 +97,9 @@
       <div class="col-lg-4" :class="{ 'text-right': isRTL }">
         <card type="chart">
           <template slot="header">
-            <h5 class="card-category">{{ $t("dashboard.completedTasks") }}</h5>
+            <h5 class="card-category">Average Items per Category</h5>
             <h3 class="card-title">
-              <i class="tim-icons icon-send text-success"></i> 12,100K
+              <i class="tim-icons icon-chart-bar-32 text-success"></i> {{ averageItemsPerCategory }}
             </h3>
           </template>
           <div class="chart-area">
@@ -115,49 +115,6 @@
         </card>
       </div>
     </div>
-    <div class="row">
-      <div class="col-lg-6 col-md-12">
-        <card type="tasks" :header-classes="{ 'text-right': isRTL }">
-          <template slot="header">
-            <h6 class="title d-inline">
-              {{ $t("dashboard.tasks", { count: 5 }) }}
-            </h6>
-            <p class="card-category d-inline">{{ $t("dashboard.today") }}</p>
-            <base-dropdown
-              menu-on-right=""
-              tag="div"
-              title-classes="btn btn-link btn-icon"
-              aria-label="Settings menu"
-              :class="{ 'float-left': isRTL }"
-            >
-              <i slot="title" class="tim-icons icon-settings-gear-63"></i>
-              <a class="dropdown-item" href="#pablo">{{
-                $t("dashboard.dropdown.action")
-              }}</a>
-              <a class="dropdown-item" href="#pablo">{{
-                $t("dashboard.dropdown.anotherAction")
-              }}</a>
-              <a class="dropdown-item" href="#pablo">{{
-                $t("dashboard.dropdown.somethingElse")
-              }}</a>
-            </base-dropdown>
-          </template>
-          <div class="table-full-width table-responsive">
-            <task-list></task-list>
-          </div>
-        </card>
-      </div>
-      <div class="col-lg-6 col-md-12">
-        <card class="card" :header-classes="{ 'text-right': isRTL }">
-          <h4 slot="header" class="card-title">
-            {{ $t("dashboard.simpleTable") }}
-          </h4>
-          <div class="table-responsive">
-            <user-table></user-table>
-          </div>
-        </card>
-      </div>
-    </div>
   </div>
 </template>
 <script>
@@ -167,6 +124,7 @@ import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "./Dashboard/TaskList";
 import UserTable from "./Dashboard/UserTable";
 import config from "@/config";
+import api from "../axios";
 
 export default {
   components: {
@@ -177,6 +135,13 @@ export default {
   },
   data() {
     return {
+      statistics: {
+        totalCategories: 0,
+        totalMenuItems: 0,
+        categoriesData: [],
+        menuItemsData: [],
+        loading: true
+      },
       bigLineChart: {
         allData: [
           [100, 70, 90, 70, 85, 60, 75, 60, 90, 80, 110, 100],
@@ -186,20 +151,7 @@ export default {
         activeIndex: 0,
         chartData: {
           datasets: [{}],
-          labels: [
-            "JAN",
-            "FEB",
-            "MAR",
-            "APR",
-            "MAY",
-            "JUN",
-            "JUL",
-            "AUG",
-            "SEP",
-            "OCT",
-            "NOV",
-            "DEC",
-          ],
+          labels: [],
         },
         extraOptions: chartConfigs.purpleChartOptions,
         gradientColors: config.colors.primaryGradient,
@@ -293,9 +245,91 @@ export default {
     bigLineChartCategories() {
       return this.$t("dashboard.chartCategories");
     },
+    averageItemsPerCategory() {
+      if (this.statistics.totalCategories === 0) return 0;
+      return Math.round((this.statistics.totalMenuItems / this.statistics.totalCategories) * 10) / 10;
+    }
   },
   methods: {
+    async fetchStatistics() {
+      try {
+        this.statistics.loading = true;
+        
+        // Fetch categories and menu items data
+        const [categoriesResponse, menuItemsResponse] = await Promise.all([
+          api.get('categories'),
+          api.get('items')
+        ]);
+        
+        this.statistics.categoriesData = categoriesResponse.data;
+        this.statistics.menuItemsData = menuItemsResponse.data;
+        this.statistics.totalCategories = categoriesResponse.data.length;
+        this.statistics.totalMenuItems = menuItemsResponse.data.length;
+        
+        // Update charts with real data
+        this.updateChartsWithRealData();
+        
+      } catch (error) {
+        console.error('Failed to fetch statistics:', error);
+      } finally {
+        this.statistics.loading = false;
+      }
+    },
+    
+    updateChartsWithRealData() {
+      // Update bar chart with items per category
+      const categoryItemCounts = this.statistics.categoriesData.map(category => {
+        const itemCount = this.statistics.menuItemsData.filter(item => 
+          item.category_id === category.id
+        ).length;
+        return itemCount;
+      });
+      
+      const categoryNames = this.statistics.categoriesData.map(category => 
+        category.name.length > 10 ? category.name.substring(0, 10) + '...' : category.name
+      );
+      
+      // Update blue bar chart with categories data
+      this.blueBarChart.chartData = {
+        labels: categoryNames,
+        datasets: [
+          {
+            label: "Items per Category",
+            fill: true,
+            borderColor: config.colors.info,
+            borderWidth: 2,
+            borderDash: [],
+            borderDashOffset: 0.0,
+            data: categoryItemCounts,
+          },
+        ],
+      };
+      
+      // Update big line chart with category data
+      this.bigLineChart.chartData = {
+        datasets: [
+          {
+            fill: true,
+            borderColor: config.colors.primary,
+            borderWidth: 2,
+            borderDash: [],
+            borderDashOffset: 0.0,
+            pointBackgroundColor: config.colors.primary,
+            pointBorderColor: "rgba(255,255,255,0)",
+            pointHoverBackgroundColor: config.colors.primary,
+            pointBorderWidth: 20,
+            pointHoverRadius: 4,
+            pointHoverBorderWidth: 15,
+            pointRadius: 4,
+            data: categoryItemCounts,
+          },
+        ],
+        labels: categoryNames,
+      };
+    },
+    
     initBigChart(index) {
+      // Keep existing functionality for chart switching
       let chartData = {
         datasets: [
           {
@@ -334,13 +368,16 @@ export default {
       this.bigLineChart.activeIndex = index;
     },
   },
-  mounted() {
+  async mounted() {
     this.i18n = this.$i18n;
     if (this.enableRTL) {
       this.i18n.locale = "ar";
       this.$rtl.enableRTL();
     }
     this.initBigChart(0);
+    
+    // Fetch real statistics data
+    await this.fetchStatistics();
   },
   beforeDestroy() {
     if (this.$rtl.isRTL) {

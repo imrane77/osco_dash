@@ -190,9 +190,9 @@
                     </div>
                     <i class="tim-icons icon-bullet-list-67 drag-handle text-muted" title="Drag to reorder"></i>
                   </div>
-                  
+
                   <p class="card-text text-muted mb-2">{{ truncateText(category.description.en, 100) }}</p>
-                  
+
                   <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">{{ formatDate(category.created_at) }}</small>
                     <div class="btn-group" role="group">
@@ -578,14 +578,6 @@ export default {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       const paginated = this.filteredSortedCategories.slice(start, end);
-      console.log('Pagination debug:', {
-        currentPage: this.currentPage,
-        itemsPerPage: this.itemsPerPage,
-        totalItems: this.filteredSortedCategories.length,
-        start,
-        end,
-        paginatedCount: paginated.length
-      });
       return paginated;
     },
     visiblePages() {
@@ -639,30 +631,25 @@ export default {
       });
     },
     getImageUrl(imagePath) {
-      console.log('Processing image path:', imagePath);
-      
+
       if (!imagePath) {
-        console.log('No image path, using placeholder');
         return 'https://via.placeholder.com/300x200/e3e6f0/6c757d?text=No+Image';
       }
-      
+
       // If it's already a full URL, return as is
       if (imagePath.startsWith('http')) {
-        console.log('Full URL detected:', imagePath);
         return imagePath;
       }
-      
+
       // If it's a data URL (base64), return as is
       if (imagePath.startsWith('data:')) {
-        console.log('Data URL detected');
         return imagePath;
       }
-      
+
       // If it's a relative path, prepend the base URL
       // Ensure there's a leading slash on the imagePath
       const cleanPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
       const fullUrl = `https://oscoapi-hjtj1.sevalla.app/storage${cleanPath}`;
-      console.log('Converted relative path to:', fullUrl);
       return fullUrl;
     },
     handleImageError(event, category) {
@@ -671,7 +658,6 @@ export default {
       event.target.src = 'https://via.placeholder.com/300x200/e3e6f0/6c757d?text=No+Image';
     },
     handleImageLoad(event, category) {
-      console.log('Image loaded successfully for category:', category.name?.en, 'URL:', event.target.src);
     },
     previewImage(category) {
       this.previewImageData = category;
@@ -716,7 +702,7 @@ export default {
       }
 
       this.isUploading = true;
-      
+
       try {
         // Create FormData for file upload
         const formData = new FormData();
@@ -737,11 +723,11 @@ export default {
         }
 
         const result = await response.json();
-        
+
         // Update the image URL
         if (result.url) {
           this.selectedCategory.image_url = result.url;
-          
+
           if (this.$notify) {
             this.$notify({
               type: 'success',
@@ -750,17 +736,17 @@ export default {
             });
           }
         }
-        
+
       } catch (error) {
         console.error('Upload error:', error);
-        
+
         // Fallback: Create a data URL for preview (temporary)
         const reader = new FileReader();
         reader.onload = (e) => {
           this.selectedCategory.image_url = e.target.result;
         };
         reader.readAsDataURL(file);
-        
+
         if (this.$notify) {
           this.$notify({
             type: 'warning',
@@ -776,7 +762,7 @@ export default {
     },
     removeImage() {
       this.selectedCategory.image_url = '';
-      
+
       if (this.$notify) {
         this.$notify({
           type: 'info',
@@ -795,10 +781,6 @@ export default {
       // Safely populate form fields with fallbacks
       this.editForm.name = category.name?.en || category.name || '';
       this.editForm.description = category.description?.en || category.description || '';
-
-      console.log('Editing category:', category);
-      console.log('Edit form populated:', this.editForm);
-
       this.showEditModal = true;
     },
     closeEditModal() {
@@ -836,14 +818,11 @@ export default {
           if (this.selectedCategory.image_url && this.selectedCategory.image_url.startsWith('http')) {
             updateData.image_url = this.selectedCategory.image_url;
           }
-
-          console.log('Sending update data:', updateData);
-          
           await updateCategory(this.selectedCategory.id, updateData);
-          
+
           this.showEditModal = false;
           this.refreshCategories();
-          
+
           // Show success notification
           if (this.$notify) {
             this.$notify({
@@ -854,7 +833,7 @@ export default {
           }
         } catch (error) {
           console.error('Error updating category:', error);
-          
+
           // Show error notification
           if (this.$notify) {
             this.$notify({
@@ -902,7 +881,6 @@ export default {
       const actualFromIndex = (this.currentPage - 1) * this.itemsPerPage + this.draggedIndex;
       const actualToIndex = (this.currentPage - 1) * this.itemsPerPage + dropIndex;
 
-      console.log('Drop event - from:', actualFromIndex, 'to:', actualToIndex);
       this.reorderItems(actualFromIndex, actualToIndex);
       this.resetDragState();
     },
@@ -925,8 +903,6 @@ async reorderItems(fromIndex, toIndex) {
   if (this.isReordering || fromIndex === toIndex) return;
 
   this.isReordering = true;
-  console.log(`Reordering from index ${fromIndex} to index ${toIndex}`);
-
   try {
     // Work with the complete sorted categories list
     const items = [...this.sortedCategories];
@@ -940,13 +916,6 @@ async reorderItems(fromIndex, toIndex) {
     const reorderedItems = [...items];
     const [movedItem] = reorderedItems.splice(fromIndex, 1);
     reorderedItems.splice(toIndex, 0, movedItem);
-
-    console.log('Items being reordered:', {
-      movedItem: { id: movedItem.id, name: movedItem.name?.en, oldOrder: movedItem.display_order },
-      fromIndex,
-      toIndex
-    });
-
     // Update display_order for all affected items
     const updatedItems = reorderedItems.map((item, index) => ({
       ...item,
@@ -955,8 +924,6 @@ async reorderItems(fromIndex, toIndex) {
 
     // Get the IDs in the new order
     const orderedIds = updatedItems.map(item => item.id);
-    console.log('New order IDs:', orderedIds);
-
     // Update categories using individual API calls
     await this.updateCategoriesIndividually(updatedItems);
 
@@ -974,7 +941,7 @@ async reorderItems(fromIndex, toIndex) {
 
   } catch (error) {
     console.error('Error reordering categories:', error);
-    
+
     // Show error notification
     if (this.$notify) {
       this.$notify({
@@ -983,7 +950,7 @@ async reorderItems(fromIndex, toIndex) {
         message: error.message || 'Failed to reorder categories. Please try again.'
       });
     }
-    
+
     // Refresh categories to revert any local changes
     await this.refreshCategories();
   } finally {
@@ -993,10 +960,8 @@ async reorderItems(fromIndex, toIndex) {
 
 // Optimized method to handle concurrent category updates
 async updateCategoriesIndividually(updatedItems) {
-  console.log('Updating categories concurrently...');
-  
   const { updateCategory } = await import('@/stores/category');
-  
+
   // Create all update promises concurrently for better performance
   const updatePromises = updatedItems.map(async (item) => {
     try {
@@ -1012,24 +977,20 @@ async updateCategoriesIndividually(updatedItems) {
         updateData.image_url = item.image_url;
       }
 
-      console.log(`Updating category ${item.id} with order ${item.display_order}`);
-      
       await updateCategory(item.id, updateData);
       return { success: true, id: item.id };
-      
+
     } catch (error) {
       console.error(`Failed to update category ${item.id}:`, error.message);
       return { success: false, id: item.id, error: error.message };
     }
   });
-  
+
   // Wait for all updates to complete
   const results = await Promise.all(updatePromises);
   const successCount = results.filter(r => r.success).length;
   const errorCount = results.filter(r => !r.success).length;
-  
-  console.log(`Concurrent updates completed: ${successCount} successful, ${errorCount} failed`);
-  
+
   if (successCount === 0) {
     throw new Error('All category updates failed');
   } else if (errorCount > 0) {
@@ -1132,33 +1093,33 @@ async updateCategoriesIndividually(updatedItems) {
     flex-wrap: wrap;
     gap: 0.25rem;
   }
-  
+
   .btn-group .btn {
     flex: 1;
     min-width: 40px;
   }
-  
+
   .category-card-image {
     width: 60px;
     height: 60px;
   }
-  
+
   .card-title {
     font-size: 1rem;
   }
-  
+
   .pagination {
     flex-wrap: wrap;
   }
-  
+
   .pagination .page-item {
     margin: 0.1rem;
   }
-  
+
   .draggable-card {
     touch-action: none;
   }
-  
+
   .drag-handle {
     font-size: 1.5rem;
     padding: 0.5rem;

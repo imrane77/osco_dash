@@ -26,6 +26,9 @@ const MenusAdd = () =>
 // Importing the new Infos component
 const InfosEdit = () =>
   import(/* webpackChunkName: "infos" */ "@/pages/Infos/Edit.vue");
+// Importing the login component
+const Login = () =>
+  import(/* webpackChunkName: "auth" */ "@/pages/auth/Login.vue");
 const routes = [
   {
     path: "/",
@@ -90,6 +93,11 @@ const routes = [
     ],
   },
   { path: "*", component: NotFound },
+  {
+    path: "/login",
+    name: "login",
+    component: Login,
+  }
 ];
 
 /**

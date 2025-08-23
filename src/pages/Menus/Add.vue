@@ -46,8 +46,8 @@
                 <label class="form-control-label">Language *</label>
                 <div class="language-selector mb-3">
                   <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                    <label 
-                      v-for="lang in availableLanguages" 
+                    <label
+                      v-for="lang in availableLanguages"
                       :key="lang.code"
                       :class="['btn', 'btn-outline-primary', { 'active': selectedLanguage === lang.code }]"
                       @click="selectedLanguage = lang.code"
@@ -66,8 +66,8 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>Category *</label>
-                  <select 
-                    v-model="menuItem.categoryId" 
+                  <select
+                    v-model="menuItem.categoryId"
                     class="form-control"
                     :class="{ 'has-danger': errors.categoryId }"
                     :disabled="isLoadingCategories"
@@ -291,7 +291,7 @@ export default {
         this.errors.name = 'Item name must be at least 3 characters long';
         isValid = false;
       }
-      
+
       // If current language is not English and has content, validate it too
       if (this.selectedLanguage !== 'en' && this.menuItem.name[this.selectedLanguage] && this.menuItem.name[this.selectedLanguage].trim()) {
         if (this.menuItem.name[this.selectedLanguage].length < 3) {
@@ -335,9 +335,7 @@ export default {
     },
 
     processImageFile(file) {
-      console.log('Processing menu image file:', file);
       if (!file) {
-        console.log('No file provided');
         return;
       }
 
@@ -346,30 +344,24 @@ export default {
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        console.log('Invalid file type:', file.type);
         this.errors.image = 'Please upload a valid image file';
         return;
       }
 
       // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        console.log('File too large:', file.size);
         this.errors.image = 'Image size must be less than 5MB';
         return;
       }
 
-      console.log('Menu file validation passed, setting image and creating preview');
       this.menuItem.image = file;
 
       // Create image preview
       const reader = new FileReader();
       reader.onload = (e) => {
-        console.log('Menu FileReader loaded, setting preview');
         this.menuItem.imagePreview = e.target.result;
-        console.log('Menu preview set:', this.menuItem.imagePreview ? 'Success' : 'Failed');
       };
       reader.onerror = (e) => {
-        console.error('Menu FileReader error:', e);
       };
       reader.readAsDataURL(file);
     },
@@ -398,26 +390,25 @@ export default {
         const formData = new FormData();
         formData.append('restaurant_id', 1); // Default restaurant ID
         formData.append('menu_category_id', this.menuItem.categoryId || 1); // Category ID
-        
+
         // Add multilingual name fields
         formData.append('name[en]', this.menuItem.name.en || '');
         formData.append('name[fr]', this.menuItem.name.fr || '');
         formData.append('name[ar]', this.menuItem.name.ar || '');
-        
+
         // Add multilingual description fields
         formData.append('description[en]', this.menuItem.description.en || '');
         formData.append('description[fr]', this.menuItem.description.fr || '');
         formData.append('description[ar]', this.menuItem.description.ar || '');
-        
+
         formData.append('base_price', parseFloat(this.menuItem.price) || 0);
         formData.append('is_available', 1); // Default to available
-        
+
         // Add image if provided
         if (this.menuItem.image) {
           formData.append('image_url', this.menuItem.image);
         }
 
-        console.log('Creating menu item with data:', Object.fromEntries(formData));
 
         await this.createMenuItem(formData);
 
@@ -432,15 +423,14 @@ export default {
         }, 1500);
 
       } catch (error) {
-        console.error('Error creating menu item:', error);
         let errorMessage = 'Failed to create menu item. Please try again.';
-        
+
         if (error.response?.data?.errors) {
           errorMessage = Object.values(error.response.data.errors).join(' ');
         } else if (error.response?.data?.message) {
           errorMessage = error.response.data.message;
         }
-        
+
         this.showErrorNotification(errorMessage);
       } finally {
         this.isSubmitting = false;
@@ -450,27 +440,20 @@ export default {
     async loadCategories() {
       this.isLoadingCategories = true;
       try {
-        console.log('Starting to load categories...');
-        
+
         // Import the category store functions
         const { getCategories, categories } = await import('@/stores/category');
-        
-        console.log('Category store imported, calling getCategories...');
+
         await getCategories();
-        
+
         // Get categories from the reactive reference
         this.availableCategories = categories.value || [];
-        
-        console.log('Categories loaded:', this.availableCategories);
-        console.log('Number of categories:', this.availableCategories.length);
-        
+
+
         if (this.availableCategories.length === 0) {
-          console.warn('No categories found - check if categories exist in database');
           this.showErrorNotification('No categories found. Please create categories first.');
         }
       } catch (error) {
-        console.error('Error loading categories:', error);
-        console.error('Error details:', error.response?.data);
         this.showErrorNotification('Failed to load categories: ' + (error.message || 'Unknown error'));
       } finally {
         this.isLoadingCategories = false;
@@ -528,7 +511,7 @@ export default {
   async mounted() {
     // Load categories when component mounts
     await this.loadCategories();
-    
+
     // Focus on the category select when component mounts
     this.$nextTick(() => {
       const categorySelect = this.$el.querySelector('select');

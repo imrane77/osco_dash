@@ -27,24 +27,19 @@ const getMenus = async (retryCount = 0) => {
     }
 
     success.value = 'Menus fetched successfully';
-    console.log('Fetched menus:', menus.value);
-
     return menus.value;
   } catch (err) {
     // Retry logic for timeout errors
     if ((err.code === 'ECONNABORTED' || err.message.includes('timeout')) && retryCount < 2) {
-      console.log(`Retrying menu fetch... Attempt ${retryCount + 1}/3`);
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
       return getMenus(retryCount + 1);
     }
 
-    const errorMessage = err.code === 'ECONNABORTED' 
+    const errorMessage = err.code === 'ECONNABORTED'
       ? 'Server timeout - please check your connection and try again'
       : err.response?.data?.message || err.response?.data?.error || 'Failed to fetch menus';
-    
+
     error.value = errorMessage;
-    console.error('Error fetching menus:', err);
-    console.error('Error response:', err.response?.data);
     throw err;
   } finally {
     isLoading.value = false;
@@ -66,7 +61,6 @@ const getMenuItem = async (id) => {
       err.response?.data?.error ||
       'Failed to fetch menu item';
     error.value = errorMessage;
-    console.error('Error fetching menu item:', err);
     throw err;
   } finally {
     isLoading.value = false;
@@ -92,7 +86,6 @@ const deleteMenu = async (id) => {
       err.response?.data?.error ||
       'Failed to delete menu';
     error.value = errorMessage;
-    console.error('Error deleting menu:', err);
     throw err;
   } finally {
     isLoading.value = false;
@@ -106,37 +99,29 @@ const updateMenu = async (id, data) => {
   success.value = null;
 
   try {
-    console.log('Sending update request for menu item:', id);
-    console.log('Update data:', data instanceof FormData ? Object.fromEntries(data) : data);
-    
+
     // Use POST with _method=PUT for proper Laravel FormData handling
     const response = await api.post(`items/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    
-    console.log('Update response:', response.data);
-    
+
+
     // Update the specific item in menus.value with the response data
     const updatedItem = response.data;
     const index = menus.value.findIndex((menu) => menu.id == id);
     if (index !== -1) {
       // Merge the updated data with existing item
       menus.value.splice(index, 1, { ...menus.value[index], ...updatedItem });
-      console.log('Updated item in local store:', menus.value[index]);
     } else {
-      console.warn('Item not found in local store, refreshing entire list');
     }
-    
+
     // Refresh the entire list to ensure consistency
     await getMenus();
     success.value = 'Menu updated successfully';
-    
+
     return updatedItem;
   } catch (err) {
-    console.error('Error updating menu:', err);
-    console.error('Error response:', err.response?.data);
-    console.error('Error status:', err.response?.status);
-    
+
     const errorMessage = err.response?.data?.message ||
       err.response?.data?.error ||
       'Failed to update menu';
@@ -158,11 +143,8 @@ const addMenu = async (menuData) => {
   success.value = null;
 
   try {
-    console.log('Sending POST request to items endpoint...');
-    console.log('Menu data:', menuData);
 
     const response = await api.post('items', menuData);
-    console.log('Menu creation response:', response.data);
 
     // Add to local array
     menus.value.push(response.data);
@@ -170,9 +152,6 @@ const addMenu = async (menuData) => {
 
     return response.data;
   } catch (err) {
-    console.error('Menu creation error:', err);
-    console.error('Error response:', err.response?.data);
-    console.error('Error status:', err.response?.status);
 
     // Handle validation errors
     if (err.response?.data?.errors) {
@@ -195,13 +174,11 @@ const reorderMenus = async (orderedIds) => {
   success.value = null;
 
   try {
-    console.log('Reordering items with IDs:', orderedIds);
 
     const response = await api.post('items/reorder', {
       ordered_ids: orderedIds
     });
 
-    console.log('Reorder response:', response.data);
 
     // Refresh items to get updated order
     await getMenus();
@@ -209,8 +186,6 @@ const reorderMenus = async (orderedIds) => {
 
     return response.data;
   } catch (err) {
-    console.error('Items reorder error:', err);
-    console.error('Error response:', err.response?.data);
 
     error.value = err.response?.data?.message || err.response?.data?.error || 'Failed to reorder items';
     throw err;
@@ -243,7 +218,6 @@ const toggleAvailability = async (id, isAvailable) => {
       err.response?.data?.error ||
       'Failed to update menu availability';
     error.value = errorMessage;
-    console.error('Error updating menu availability:', err);
     throw err;
   } finally {
     isLoading.value = false;
@@ -271,7 +245,6 @@ const bulkDeleteMenus = async (ids) => {
       err.response?.data?.error ||
       'Failed to delete menu items';
     error.value = errorMessage;
-    console.error('Error bulk deleting menus:', err);
     throw err;
   } finally {
     isLoading.value = false;
@@ -311,7 +284,6 @@ const searchMenus = async (query, filters = {}) => {
       err.response?.data?.error ||
       'Failed to search menu items';
     error.value = errorMessage;
-    console.error('Error searching menus:', err);
     throw err;
   } finally {
     isLoading.value = false;
@@ -334,7 +306,6 @@ const getMenuCategories = async () => {
 
     return [];
   } catch (err) {
-    console.error('Error fetching menu categories:', err);
     return [];
   }
 };
@@ -387,7 +358,6 @@ const formatDate = (dateString) => {
       day: 'numeric'
     });
   } catch (error) {
-    console.error('Error formatting date:', error);
     return dateString;
   }
 };

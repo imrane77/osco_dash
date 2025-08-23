@@ -704,7 +704,6 @@ export default {
         await getMenus();
         this.errorMessage = null;
       } catch (err) {
-        console.error('Error loading menu items:', err);
         this.errorMessage = 'Failed to load menu items. Please try again.';
       }
     },
@@ -757,7 +756,6 @@ export default {
       try {
         await getCategories();
       } catch (err) {
-        console.error('Error loading categories:', err);
       }
     },
 
@@ -824,8 +822,6 @@ export default {
     },
 
     populateEditForm(menuItem) {
-      console.log('Populating edit form with menu item:', menuItem);
-      
       // Handle multilingual name
       if (typeof menuItem.name === 'object') {
         this.editForm.name = {
@@ -860,9 +856,7 @@ export default {
       this.editForm.menu_category_id = menuItem.menu_category_id || '';
       this.editForm.is_available = menuItem.is_available !== false;
       this.editForm.image_url = menuItem.image_url || '';
-      
-      console.log('Edit form populated:', this.editForm);
-      console.log('Image URL set to:', this.editForm.image_url);
+
     },
 
 async updateMenuItem() {
@@ -898,12 +892,6 @@ async updateMenuItem() {
     } else if (this.editForm.image_url) {
       formData.append('image_url', this.editForm.image_url);
     }
-
-    console.log('Updating menu item with data:', {
-      id: this.editingMenuItem.id,
-      formData: Object.fromEntries(formData)
-    });
-
     await updateMenu(this.editingMenuItem.id, formData);
     this.showSuccessNotification('Menu item updated successfully!');
     this.showEditModal = false;
@@ -911,7 +899,6 @@ async updateMenuItem() {
     this.resetEditForm(); // Reset form after success
     await this.loadMenuItems(); // Force reload to ensure UI reflects changes
   } catch (error) {
-    console.error('Error updating menu item:', error.response?.data);
     let msg = 'Failed to update menu item';
     if (error.response?.data?.errors) {
       msg = Object.values(error.response.data.errors).join(' ');
@@ -955,7 +942,6 @@ async updateMenuItem() {
         this.showDeleteModal = false;
         this.menuItemToDelete = null;
       } catch (error) {
-        console.error('Error deleting menu item:', error);
         this.showErrorNotification('Failed to delete menu item');
       } finally {
         this.deleting = false;
@@ -1007,41 +993,34 @@ async updateMenuItem() {
     },
 
     getImageUrl(imagePath) {
-      console.log('Processing menu image path:', imagePath);
-      
+
       if (!imagePath) {
-        console.log('No image path, using placeholder');
         return '/img/placeholder-menu.jpg';
       }
-      
+
       // If it's a blob URL (from file upload), return as is
       if (imagePath.startsWith('blob:')) {
-        console.log('Blob URL detected:', imagePath);
         return imagePath;
       }
-      
+
       // If it's already a full URL, return as is
       if (imagePath.startsWith('http')) {
-        console.log('Full URL detected:', imagePath);
         return imagePath;
       }
-      
+
       // If it's a relative path, prepend the base URL
       // Ensure there's a leading slash on the imagePath
       const cleanPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
       const fullUrl = `https://oscoapi-hjtj1.sevalla.app/storage${cleanPath}`;
-      console.log('Converted relative path to:', fullUrl);
       return fullUrl;
     },
 
     handleImageError(event, menuItem) {
-      console.error('Menu image failed to load for item:', menuItem?.name?.en || 'Unknown', 'URL:', event.target.src);
       // Set a placeholder image on error
       event.target.src = '/img/placeholder-menu.jpg';
     },
 
     handleImageLoad(event, menuItem) {
-      console.log('Menu image loaded successfully for item:', menuItem?.name?.en || 'Unknown', 'URL:', event.target.src);
     }
   },
 

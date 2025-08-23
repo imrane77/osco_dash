@@ -855,9 +855,6 @@ export default {
           snapchat: this.branding.snapchat.trim(),
           tiktok: this.branding.tiktok.trim()
         };
-
-        console.log('Submitting payload:', payload); // Debug payload
-
         const response = await api.put('restaurant', payload);
         restaurantInfo.value = response.data;
 
