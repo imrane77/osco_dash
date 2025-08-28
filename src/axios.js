@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: (process.env.VUE_APP_API_URL || 'http://localhost:8000/api') + '/', // Ensure trailing slash
+  baseURL: (process.env.VUE_APP_API_URL || 'https://oscoapi-hjtj1.sevalla.app/api') + '/', // Ensure trailing slash
   timeout: 30000, // Increased to 30 seconds
   retry: 3, // Add retry attempts
 });

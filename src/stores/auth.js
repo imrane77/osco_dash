@@ -1,65 +1,54 @@
-import api from "../axios";
 import { ref } from "vue";
+
+// Simple client-side authentication
+// Default credentials for demo purposes
+const DEFAULT_CREDENTIALS = {
+  email: "admin@pizzapalace.ma",
+  password: "securepassword123"
+};
 
 // state
 const user = ref(null);
-const token = ref(localStorage.getItem("token") || null);
+const isAuthenticated = ref(localStorage.getItem("isAuthenticated") === "true");
+
+// Initialize user if already authenticated
+if (isAuthenticated.value) {
+  user.value = {
+    id: 1,
+    name: "Admin User",
+    email: DEFAULT_CREDENTIALS.email
+  };
+}
 
 // login
 const login = async (email, password) => {
-  try {
-    const response = await api.post("login", { email, password });
-    token.value = response.data.token;
-    localStorage.setItem("token", token.value);
-    await getUser();
+  // Simple credential check
+  if (email === DEFAULT_CREDENTIALS.email && password === DEFAULT_CREDENTIALS.password) {
+    user.value = {
+      id: 1,
+      name: "Admin User",
+      email: email
+    };
+    isAuthenticated.value = true;
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("user", JSON.stringify(user.value));
     return true;
-  } catch (error) {
-    console.error("Login failed:", error);
-    return false;
   }
-};
-
-// profile
-const getUser = async () => {
-  try {
-    const response = await api.get("profile", {
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
-    });
-    user.value = response.data;
-  } catch (error) {
-    logout();
-  }
+  return false;
 };
 
 // logout
 const logout = async () => {
-  try {
-    // Call API logout endpoint if token exists
-    if (token.value) {
-      await api.post("logout", {}, {
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      });
-    }
-  } catch (error) {
-    console.error("Logout API call failed:", error);
-    // Continue with local logout even if API fails
-  } finally {
-    // Clear local data regardless of API response
-    token.value = null;
-    user.value = null;
-    localStorage.removeItem("token");
-  }
+  user.value = null;
+  isAuthenticated.value = false;
+  localStorage.removeItem("isAuthenticated");
+  localStorage.removeItem("user");
 };
 
 // export
 export default {
   user,
-  token,
+  isAuthenticated,
   login,
-  getUser,
   logout,
 };

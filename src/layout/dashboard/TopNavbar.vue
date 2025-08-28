@@ -117,15 +117,8 @@ export default {
       this.showMenu = !this.showMenu;
     },
     async handleLogout() {
-      try {
-        await auth.logout();
-        this.$router.push('/login');
-      } catch (error) {
-        console.error('Logout failed:', error);
-        // Force logout even if API fails
-        await auth.logout();
-        this.$router.push('/login');
-      }
+      await auth.logout();
+      this.$router.push('/login');
     },
   },
 };

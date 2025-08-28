@@ -17,7 +17,7 @@ const router = new VueRouter({
 
 // Navigation guard to protect routes
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = auth.token.value !== null;
+  const isAuthenticated = auth.isAuthenticated.value;
   
   // If user is not authenticated and trying to access protected routes
   if (!isAuthenticated && to.path !== '/login') {

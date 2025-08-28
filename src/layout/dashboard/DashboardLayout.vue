@@ -33,11 +33,6 @@
           icon="tim-icons icon-bell-55"
         /> -->
         <sidebar-link
-          to="/profile"
-          :name="$t('sidebar.userProfile')"
-          icon="tim-icons icon-single-02"
-        />
-        <sidebar-link
           to="/infos/edit"
           :name="$t('sidebar.infos')"
           icon="tim-icons icon-settings-gear-63"
