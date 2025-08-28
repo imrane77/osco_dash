@@ -164,13 +164,8 @@
               :key="category.id"
               :data-id="category.id"
               :data-index="index"
-              draggable="true"
-              @dragstart="handleDragStart($event, category, index)"
-              @dragover="handleDragOver"
-              @drop="handleDrop($event, index)"
-              @dragend="handleDragEnd"
               :class="{ 'dragging': draggedItem && draggedItem.id === category.id, 'drag-over': dragOverIndex === index }"
-              class="col-12 col-md-6 mb-3 draggable-card"
+              class="col-12 col-md-6 mb-3 mobile-category-card"
             >
               <card class="category-card h-100">
                 <div class="card-body p-3">
@@ -188,7 +183,18 @@
                       <h5 class="card-title mb-1">{{ category.name.en }}</h5>
                       <small class="text-muted">Order: {{ category.display_order }}</small>
                     </div>
-                    <i class="tim-icons icon-bullet-list-67 drag-handle text-muted" title="Drag to reorder"></i>
+                    <i 
+                      class="tim-icons icon-bullet-list-67 mobile-drag-handle text-muted" 
+                      title="Drag to reorder"
+                      draggable="true"
+                      @dragstart="handleMobileDragStart($event, category, index)"
+                      @dragover="handleDragOver"
+                      @drop="handleDrop($event, index)"
+                      @dragend="handleDragEnd"
+                      @touchstart="handleTouchStart($event, category, index)"
+                      @touchmove="handleTouchMove"
+                      @touchend="handleTouchEnd"
+                    ></i>
                   </div>
 
                   <p class="card-text text-muted mb-2">{{ truncateText(category.description.en, 100) }}</p>
@@ -545,6 +551,10 @@ export default {
       draggedIndex: null,
       dragOverIndex: null,
       isReordering: false,
+      // Touch handling for mobile
+      isDragging: false,
+      touchStartY: null,
+      touchStartX: null,
       isDeleting: false,
       isSaving: false,
       searchTerm: '',
@@ -857,6 +867,65 @@ export default {
       event.target.style.opacity = '0.5';
     },
 
+    handleMobileDragStart(event, category, index) {
+      // Only allow drag from the drag handle itself
+      if (!event.target.classList.contains('mobile-drag-handle')) {
+        event.preventDefault();
+        return;
+      }
+      this.handleDragStart(event, category, index);
+    },
+
+    handleTouchStart(event, category, index) {
+      // Prevent default to avoid scrolling interference
+      event.preventDefault();
+      this.draggedItem = category;
+      this.draggedIndex = index;
+      
+      // Store initial touch position
+      this.touchStartY = event.touches[0].clientY;
+      this.touchStartX = event.touches[0].clientX;
+      this.isDragging = false;
+    },
+
+    handleTouchMove(event) {
+      if (!this.draggedItem) return;
+      
+      const touch = event.touches[0];
+      const deltaY = Math.abs(touch.clientY - this.touchStartY);
+      const deltaX = Math.abs(touch.clientX - this.touchStartX);
+      
+      // Only start dragging if moved more than 10px
+      if (deltaY > 10 || deltaX > 10) {
+        this.isDragging = true;
+        event.preventDefault();
+        
+        // Find the element under the touch point
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const cardElement = elementBelow?.closest('.mobile-category-card');
+        
+        if (cardElement && cardElement.dataset.index !== undefined) {
+          const index = parseInt(cardElement.dataset.index);
+          this.dragOverIndex = index;
+        }
+      }
+    },
+
+    handleTouchEnd(event) {
+      if (this.isDragging && this.dragOverIndex !== null && this.draggedIndex !== this.dragOverIndex) {
+        // Calculate actual indices in the full filtered list
+        const actualFromIndex = (this.currentPage - 1) * this.itemsPerPage + this.draggedIndex;
+        const actualToIndex = (this.currentPage - 1) * this.itemsPerPage + this.dragOverIndex;
+        
+        this.reorderItems(actualFromIndex, actualToIndex);
+      }
+      
+      this.resetDragState();
+      this.isDragging = false;
+      this.touchStartY = null;
+      this.touchStartX = null;
+    },
+
     handleDragOver(event) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
@@ -1072,19 +1141,35 @@ async updateCategoriesIndividually(updatedItems) {
   border-bottom-left-radius: 0;
 }
 
-.draggable-card {
-  cursor: move;
+.mobile-category-card {
   transition: all 0.2s ease;
 }
 
-.draggable-card.dragging {
+.mobile-category-card.dragging {
   opacity: 0.5;
   transform: scale(0.95);
 }
 
-.draggable-card.drag-over {
+.mobile-category-card.drag-over {
   border: 2px dashed #1d8cf8;
   background-color: rgba(29, 140, 248, 0.05);
+}
+
+.mobile-drag-handle {
+  cursor: grab;
+  font-size: 1.5rem;
+  padding: 0.5rem;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.mobile-drag-handle:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 768px) {
@@ -1116,13 +1201,8 @@ async updateCategoriesIndividually(updatedItems) {
     margin: 0.1rem;
   }
 
-  .draggable-card {
-    touch-action: none;
-  }
-
-  .drag-handle {
-    font-size: 1.5rem;
-    padding: 0.5rem;
+  .mobile-category-card {
+    touch-action: auto;
   }
 }
 
