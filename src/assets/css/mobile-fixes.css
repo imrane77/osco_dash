@@ -1,0 +1,118 @@
+/* Mobile Zoom Prevention and Touch Fixes */
+
+/* Prevent automatic zoom on input focus */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+select {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Prevent zoom on double tap - but allow scrolling */
+html, body {
+  touch-action: manipulation;
+}
+
+/* Specific touch action for scrollable areas */
+.table-responsive,
+.modal-body {
+  touch-action: pan-y pan-x;
+}
+
+.card-body {
+  touch-action: auto;
+}
+
+/* Prevent text selection on buttons and interactive elements */
+button,
+.btn,
+.page-link,
+.drag-handle,
+.mobile-drag-handle {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Fix for iOS Safari zoom on input focus */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: translateZ(0);
+  }
+  
+  /* Prevent zoom on form controls */
+  .form-control {
+    font-size: 16px !important;
+  }
+  
+  /* Prevent zoom on search inputs */
+  input[type="search"] {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+  }
+}
+
+/* Prevent zoom on button tap */
+@media screen and (max-width: 768px) {
+  button,
+  .btn,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    touch-action: manipulation;
+  }
+  
+  /* Ensure category cards allow scrolling */
+  .mobile-category-card,
+  .category-card,
+  .card {
+    touch-action: auto !important;
+  }
+  
+  /* Allow scrolling on card content */
+  .card-body {
+    touch-action: auto !important;
+  }
+}
+
+/* Fix for modal and overlay zoom issues */
+.modal,
+.modal-dialog,
+.modal-content {
+  touch-action: manipulation;
+}
+
+/* Prevent zoom on table interactions */
+.table,
+.table td,
+.table th {
+  touch-action: manipulation;
+}
+
+/* Fix for card interactions - allow all scrolling */
+.card,
+.category-card,
+.mobile-category-card {
+  touch-action: auto;
+}
+
+/* Specific fix for drag handles */
+.drag-handle,
+.mobile-drag-handle {
+  touch-action: none;
+}
