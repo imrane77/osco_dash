@@ -3,8 +3,8 @@ import { ref } from "vue";
 // Simple client-side authentication
 // Default credentials for demo purposes
 const DEFAULT_CREDENTIALS = {
-  email: "admin@osco.ma",
-  password: "12345678"
+  email: "admin@pizzapalace.ma",
+  password: "securepassword123"
 };
 
 // state

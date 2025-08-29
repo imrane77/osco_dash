@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper">
-    <side-bar>
+    <side-bar :auto-close="true">
       <template slot="links">
         <sidebar-link
           to="/dashboard"
@@ -108,6 +108,27 @@ export default {
           icon: "tim-icons icon-bullet-list-67"
         },
       ],
+      windowWidth: window.innerWidth
+    }
+  },
+  computed: {
+    isMobile() {
+      return this.windowWidth <= 768;
+    }
+  },
+  mounted() {
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize);
+  },
+  watch: {
+    '$route'() {
+      // Close sidebar when route changes (all devices)
+      if (this.$sidebar && this.$sidebar.showSidebar) {
+        this.$sidebar.displaySidebar(false);
+      }
     }
   },
   methods: {
@@ -115,6 +136,9 @@ export default {
       if (this.$sidebar.showSidebar) {
         this.$sidebar.displaySidebar(false);
       }
+    },
+    handleResize() {
+      this.windowWidth = window.innerWidth;
     },
   },
 };

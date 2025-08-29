@@ -45,12 +45,13 @@
               <div class="col-md-12">
                 <label class="form-control-label">Language *</label>
                 <div class="language-selector mb-3">
-                  <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                  <div class="btn-group btn-group-toggle d-flex flex-wrap" data-toggle="buttons">
                     <label
                       v-for="lang in availableLanguages"
                       :key="lang.code"
-                      :class="['btn', 'btn-outline-primary', { 'active': selectedLanguage === lang.code }]"
+                      :class="['btn', 'btn-outline-primary', 'flex-fill', 'mb-2', 'mr-2', { 'active': selectedLanguage === lang.code }]"
                       @click="selectedLanguage = lang.code"
+                      style="min-width: 120px; max-width: 150px;"
                     >
                       <input type="radio" :value="lang.code" v-model="selectedLanguage" autocomplete="off">
                       <i :class="lang.icon" class="mr-1"></i>

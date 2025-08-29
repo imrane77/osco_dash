@@ -37,8 +37,9 @@ export default {
     },
   },
   methods: {
-    hideSidebar() {
-      if (this.autoClose) {
+    hideSidebar(event) {
+      // Close sidebar when autoClose is enabled
+      if (this.autoClose && this.$sidebar) {
         this.$sidebar.displaySidebar(false);
       }
     },

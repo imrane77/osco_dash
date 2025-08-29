@@ -62,8 +62,18 @@ export default {
   methods: {
     toggleDropdown() {
       this.isOpen = !this.isOpen
+    },
+    handleChildClick(event) {
+      // Prevent event bubbling and close sidebar immediately
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (this.$sidebar) {
+        console.log('Closing sidebar from dropdown click');
+        this.$sidebar.displaySidebar(false);
+      }
     }
-  },
+  },  
   watch: {
     '$route'() {
       // Auto-open dropdown if child route is active

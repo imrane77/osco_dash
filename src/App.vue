@@ -15,12 +15,22 @@ export default {
     },
     toggleNavOpen() {
       let root = document.getElementsByTagName("html")[0];
-      root.classList.toggle("nav-open");
+      if (this.$sidebar.showSidebar) {
+        root.classList.add("nav-open");
+      } else {
+        root.classList.remove("nav-open");
+      }
+    },
+    closeSidebarOnNavigation() {
+      if (this.$sidebar && this.$sidebar.showSidebar) {
+        this.$sidebar.displaySidebar(false);
+      }
     },
   },
   mounted() {
     this.$watch("$route", this.disableRTL, { immediate: true });
     this.$watch("$sidebar.showSidebar", this.toggleNavOpen);
+    this.$watch("$route", this.closeSidebarOnNavigation);
   },
 };
 </script>
